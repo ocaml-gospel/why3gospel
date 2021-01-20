@@ -9,7 +9,8 @@
 (**************************************************************************)
 
 module T = Gospel.Tast
-module Ot = Gospel.Oparsetree
+(* module Ot = Gospel.Oparsetree *)
+module P = Ppxlib
 open Driver
 open Why3
 open Ptree
@@ -18,7 +19,7 @@ type gdecl =
   | Gdecl of decl
   | Gmodule of Loc.position * ident * gdecl list
 
-let location { Gospel.Location.loc_start = b; Gospel.Location.loc_end = e } =
+let location P.{ loc_start = b; loc_end = e } =
   Loc.extract (b, e)
 
 let dummy_loc = Loc.dummy_position
@@ -326,7 +327,7 @@ let empty_spec = {
   sp_partial = false;
 }
 
-let rec core_type Ot.{ ptyp_desc; ptyp_loc } =
+let rec core_type Parsetree.{ ptyp_desc; ptyp_loc } =
   match ptyp_desc with
   | Ptyp_var x ->
       PTtyvar (mk_id x ~id_loc:(location ptyp_loc))
@@ -339,9 +340,9 @@ let rec core_type Ot.{ ptyp_desc; ptyp_loc } =
         | None   -> id_str
         | Some s -> s in
       let rec longident id_loc = function
-        | Gospel.Longident.Lident s ->
+        | Longident.Lident s ->
             Qident (mk_id (mk_str s) ~id_loc)
-        | Gospel.Longident.Ldot (t, s) ->
+        | Longident.Ldot (t, s) ->
             Qdot (longident id_loc t, mk_id (mk_str s) ~id_loc)
         | _ -> assert false (* TODO? *) in
       PTtyapp (longident (location loc) txt, List.map core_type ctl)
@@ -349,11 +350,11 @@ let rec core_type Ot.{ ptyp_desc; ptyp_loc } =
 
 (** Convert GOSPEL [val] declarations into Why3's Ptree [val] declarations. *)
 let val_decl info vd g =
-  let rec flat_ptyp_arrow ct = match ct.Ot.ptyp_desc with
-    | Ot.Ptyp_var _ | Ptyp_tuple _ | Ptyp_constr _ -> [ct]
-    | Ot.Ptyp_arrow (_, t1, t2) ->
+  let rec flat_ptyp_arrow ct = match ct.P.ptyp_desc with
+    | P.Ptyp_var _ | Ptyp_tuple _ | Ptyp_constr _ -> [ct]
+    | Ptyp_arrow (_, t1, t2) ->
         begin match t1.ptyp_desc with
-        | Ot.Ptyp_arrow _-> t1 :: flat_ptyp_arrow t2
+        | Ptyp_arrow _-> t1 :: flat_ptyp_arrow t2
         | _ -> flat_ptyp_arrow t1 @ flat_ptyp_arrow t2 end
     | _ -> assert false (* TODO *) in
   let mk_single_param lb_arg ct =
@@ -384,7 +385,7 @@ let val_decl info vd g =
         mk_ghost_param lb :: mk_param lb_args core_tys
     | lb :: lb_args, ct :: core_tys ->
         (mk_single_param lb ct) :: mk_param lb_args core_tys in
-  let mk_param_no_spec ct = let loc = location ct.Ot.ptyp_loc in
+  let mk_param_no_spec ct = let loc = location ct.P.ptyp_loc in
     loc, None, false, core_type ct in
   let mk_vals params ret pat mask =
     let vd_str = vd.T.vd_name.I.id_str in
@@ -410,7 +411,7 @@ let val_decl info vd g =
     | None -> let param_list = List.map mk_param_no_spec core_tys in
         (* when there is no specification, there is no pattern
            in the return tuple *)
-        let pat = Term.mk_pattern Pwild (location last.Ot.ptyp_loc) in
+        let pat = Term.mk_pattern Pwild (location last.P.ptyp_loc) in
         param_list, pat, Ity.MaskVisible
     | Some s -> let params = mk_param s.T.sp_args core_tys in
         let mk_pat lb = let loc = loc_of_lb_arg lb in

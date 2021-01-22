@@ -2,8 +2,8 @@
  (flags :standard -w -9 -linkall)
  (name why3gospel)
  (modes plugin)
- (libraries ppxlib why3 gospel)
- (embed_in_plugin_libraries compiler-libs.common ocaml-compiler-libs.shadow ocaml-migrate-parsetree sexplib0 ppxlib.ast ppxlib.stdppx ppxlib.traverse_builtins ppxlib.print_diff ppx_derivers ppxlib fmt gospel))
+ (libraries ppxlib sexplib why3 gospel)
+ (embed_in_plugin_libraries compiler-libs.common ocaml-compiler-libs.shadow ocaml-migrate-parsetree ppxlib.ast ppxlib.stdppx ppxlib.traverse_builtins ppxlib.print_diff ppx_derivers ppxlib fmt gospel))
 
 (install
  (section lib_root)

@@ -1,5 +1,5 @@
 (executable
- (flags :standard -w -9 -linkall)
+ (flags :standard -open Ocaml_shadow -w -9)
  (name why3gospel)
  (modes plugin)
  (libraries ppxlib sexplib why3 gospel)

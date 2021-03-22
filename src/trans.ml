@@ -196,7 +196,7 @@ let td_vis_from_manifest = function
 (** Convert a GOSPEL type definition into a Why3's Ptree [type_def]. If the
     GOSPEL type manifest is [None], then the type is defined via its
     specification fields. Otherwise, it is an alias type. *)
-let td_def info td_spec td_manifest =
+let td_def info td_fields td_manifest =
   let field_of_lsymbol (ls, mut) =
     let id  = Term.ident_of_lsymbol ls in
     let pty = Term.ty info Term.(Opt.get ls.Tt.ls_value) in
@@ -204,18 +204,24 @@ let td_def info td_spec td_manifest =
   let td_def_of_ty_fields ty_fields =
     TDrecord (List.map field_of_lsymbol ty_fields) in
   match td_manifest with
-  | None -> td_def_of_ty_fields td_spec.T.ty_fields
+  | None -> td_def_of_ty_fields td_fields
   | Some ty -> TDalias (Term.ty info ty)
 
-let type_decl info (T.{td_ts = {ts_ident}; td_spec; td_manifest} as td) = {
+let type_decl info (T.{td_ts = {ts_ident}; td_spec; td_manifest} as td) =
+  let td_mut, td_fields, td_inv = match td_spec with
+  | None -> false, [], []
+  | Some td ->
+      td.ty_ephemeral, td.T.ty_fields, List.map (Term.term info) td.ty_invariants;
+  in
+ {
   td_loc    = location td.td_loc;
   td_ident  = mk_id ts_ident.id_str ~id_loc:(location td.td_loc);
   td_params = List.map td_params td.td_params;
   td_vis    = td_vis_from_manifest td_manifest;
-  td_mut    = td_spec.ty_ephemeral;
-  td_inv    = List.map (Term.term info) td_spec.ty_invariants;
+  td_mut;
+  td_inv;
   td_wit    = [];
-  td_def    = td_def info td_spec td_manifest
+  td_def    = td_def info td_fields td_manifest
 }
 
 let type_decl info (T.{td_ts} as td) =
@@ -254,14 +260,14 @@ open Term
     [(pattern * post) list Mxs.t] into a Why3's Ptree [xpost]
     of the form [Loc.position * (qualid * (pattern * term) option) list]. *)
 let sp_xpost info xpost =
-  let mk_xpost_list xs pat_post_list acc =
+  let mk_xpost_list (xs, pat_post_list) =
     let id_loc = location xs.Ty.xs_ident.I.id_loc in
     let mk_xpost (pat, post) =
       let q = Qident (mk_id xs.Ty.xs_ident.I.id_str ~id_loc) in
       let post = term info post in
       q, Some (Term.pattern pat, post) in
-    (id_loc, List.map mk_xpost pat_post_list) :: acc in
-  Ty.Mxs.fold mk_xpost_list xpost []
+    (id_loc, List.map mk_xpost pat_post_list) in
+  List.map mk_xpost_list xpost
 
 let sp_writes info =
   List.map (term info)
@@ -295,7 +301,7 @@ let spec_with_checks info val_spec pre checks =
 }
 
 let spec info val_spec = {
-  sp_pre     = List.map (fun (t, _) -> term info t) val_spec.T.sp_pre;
+  sp_pre     = List.map (fun t -> term info t) val_spec.T.sp_pre;
   sp_post    = sp_post info val_spec.sp_ret val_spec.sp_post;
   sp_xpost   = sp_xpost info val_spec.sp_xpost;
   sp_reads   = [];
@@ -306,12 +312,6 @@ let spec info val_spec = {
   sp_diverge = false;
   sp_partial = false;
 }
-
-let split_on_checks sp_pre =
-  let mk_split (pre, checks) (t, is_checks) =
-    if is_checks then pre, t :: checks else t :: pre, checks in
-  let pre, checks = List.fold_left mk_split ([], []) sp_pre in
-  List.rev pre, List.rev checks
 
 let empty_spec = {
   sp_pre     = [];
@@ -362,14 +362,15 @@ let val_decl info vd g =
     let pty = core_type ct in
     let id = ident_of_lb_arg lb_arg in
     let id, ghost, pty = match lb_arg with
+      | Lunit    -> id, false, pty
       | Lnone _  -> id, false, pty
       | Lghost _ -> id, true,  pty
       | Lnamed _ -> add_at_id Ocaml.Print.named_arg id, false, pty
-      | Lquestion _ -> let id = add_at_id Ocaml.Print.optional_arg id in
+      | Loptional _ -> let id = add_at_id Ocaml.Print.optional_arg id in
           id, false, PTtyapp (Qident (mk_id "option" ~id_loc), [pty]) in
     id_loc, Some id, ghost, pty in
   let mk_ghost_param = function
-    | T.Lnone _ | Lnamed _ | Lquestion _ -> assert false
+    | T.Lunit | T.Lnone _ | Lnamed _ | Loptional _ -> assert false
     | T.Lghost vs ->
         let id_loc = location vs.Tt.vs_name.I.id_loc in
         let id = Some (mk_id vs.Tt.vs_name.I.id_str ~id_loc) in
@@ -396,7 +397,7 @@ let val_decl info vd g =
     match vd.T.vd_spec with
     | None   -> [mk_val (mk_id vd_str) params ret pat mask empty_spec]
     | Some s -> (* creative indentation *)
-    begin match split_on_checks s.sp_pre with
+    begin match s.sp_pre, s.sp_checks with
     | _, []     -> [mk_val (mk_id vd_str) params ret pat mask (spec info s)]
     | pre, checks -> let id_unsafe = mk_id ("unsafe_" ^ vd_str) in
         let checks_term = List.map (term info) checks in
@@ -416,7 +417,7 @@ let val_decl info vd g =
         let mk_pat lb = let loc = loc_of_lb_arg lb in
           Term.mk_pattern (Pvar (ident_of_lb_arg lb)) loc in
         let mk_mask = function
-          | T.Lnone  _ | T.Lquestion _ | T.Lnamed _ -> Ity.MaskVisible
+          | T.Lunit | T.Lnone  _ | T.Loptional _ | T.Lnamed _ -> Ity.MaskVisible
           | T.Lghost _ -> Ity.MaskGhost in
         let lb_list = s.T.sp_ret in
         let pat_list  = List.map mk_pat lb_list in

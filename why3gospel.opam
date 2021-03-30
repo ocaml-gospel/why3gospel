@@ -23,7 +23,7 @@ depends: [
   "gospel"
 ]
 pin-depends: [
-  "gospel.dev" "git+https://github.com/ocaml-gospel/gospel#635bb84825e5afea8185d01e29ddc8f2d3c66da3"
+  "gospel.dev" "git+https://github.com/ocaml-gospel/gospel#9e0c21d385888d79944a1d397c46ddfd52d5bf12"
 ]
 
 synopsis: "A Why3 plugin to read GOSPEL files"

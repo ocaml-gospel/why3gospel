@@ -236,8 +236,12 @@ let mk_logic_decl ld_loc ld_ident ld_params ld_type ld_def =
 
 let loc_of_vs vs = Term.(location vs.Tt.vs_name.I.id_loc)
 
-let ident_of_lb_arg lb = Term.ident_of_vsymbol (T.vs_of_lb_arg lb)
-let loc_of_lb_arg   lb = loc_of_vs (T.vs_of_lb_arg lb)
+let ident_of_lb_arg = function
+  | T.Lunit -> mk_id "()"
+  | lb -> Term.ident_of_vsymbol (T.vs_of_lb_arg lb)
+let loc_of_lb_arg = function
+  | T.Lunit -> dummy_loc
+  | lb -> loc_of_vs (T.vs_of_lb_arg lb)
 
 (** Given the result type [sp_ret] of a function and a GOSPEL postcondition
     [post] (represented as a [term]), convert it into a Why3's Ptree
@@ -246,7 +250,8 @@ let sp_post info sp_ret post =
   let mk_post post =
     let pvar_of_lb_arg_list lb_arg_list =
       let mk_pvar lb = (* create a [Pvar] pattern out of a [Tt.lb_arg] *)
-        Term.mk_pattern (Pvar (ident_of_lb_arg lb)) dummy_loc in
+        let pat = match lb with T.Lunit -> Pwild | _ -> Pvar (ident_of_lb_arg lb) in
+        Term.mk_pattern pat dummy_loc in
       List.map mk_pvar lb_arg_list in
     let pat = match pvar_of_lb_arg_list sp_ret with
       | [p] -> p
@@ -358,7 +363,7 @@ let val_decl info vd g =
     | _ -> assert false (* TODO *) in
   let mk_single_param lb_arg ct =
     let add_at_id at id = { id with id_ats = ATstr at :: id.id_ats } in
-    let id_loc = (location (T.vs_of_lb_arg lb_arg).vs_name.I.id_loc) in
+    let id_loc = loc_of_lb_arg lb_arg in
     let pty = core_type ct in
     let id = ident_of_lb_arg lb_arg in
     let id, ghost, pty = match lb_arg with

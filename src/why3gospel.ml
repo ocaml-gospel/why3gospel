@@ -9,6 +9,7 @@
 (**************************************************************************)
 
 module P = Ppxlib
+module G = Gospel
 open Trans
 open Why3
 open Ptree
@@ -39,15 +40,15 @@ let use_array loc =
 let read_file file nm c =
   let lb = Lexing.from_channel c in
   P.Location.init lb file;
-  Gospel.Parser_frontend.(parse_gospel (parse_ocaml_lb lb) nm)
+  G.Parser_frontend.(parse_signature_gospel (parse_ocaml_signature_lb lb) nm)
 
 let type_check name nm sigs =
-  let md = Gospel.Tmodule.init_muc name in
-  let penv = Gospel.Typing.penv [] (Gospel.Utils.Sstr.singleton nm) in
-  let md = List.fold_left (Gospel.Typing.type_sig_item penv) md sigs in
-  Gospel.Tmodule.wrap_up_muc md
+  let md = G.Tmodule.init_muc name in
+  let penv = G.Typing.penv [] (G.Utils.Sstr.singleton nm) in
+  let md = List.fold_left (G.Typing.type_sig_item penv) md sigs in
+  G.Tmodule.wrap_up_muc md
 
-module Ut = Gospel.Uast
+module Ut = G.Uast
 
 (* extract additional uses and vals from file.mli.why3, if any *)
 let extract_use sig_item = match sig_item.Ut.sdesc with

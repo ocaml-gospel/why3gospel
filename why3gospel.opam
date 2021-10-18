@@ -1,30 +1,35 @@
 opam-version: "2.0"
+synopsis: "A Why3 plugin to read Gospel files"
 maintainer: "Jean-Christophe.Filliatre@lri.fr"
-authors: [
-  "Jean-Christophe Filliâtre"
-  "Clément Pascutto"
-  "Mário Pereira"
-]
+authors: ["Jean-Christophe Filliâtre" "Clément Pascutto" "Mário Pereira"]
 license: "MIT"
 homepage: "https://github.com/ocaml-gospel/why3gospel"
 dev-repo: "git://github.com/ocaml-gospel/why3gospel"
 bug-reports: "https://github.com/ocaml-gospel/why3gospel/issues"
-
 build: [
   ["dune" "subst"] {pinned}
-  ["dune" "build" "-p" name "-j" jobs]
-  ["dune" "runtest" "-p" name] {with-test}
+  [
+    "dune"
+    "build"
+    "-p"
+  name
+    "-j"
+    jobs
+    "@install"
+    "@runtest" {with-test}
+  "@doc" {with-doc}
+  ]
 ]
 
 depends: [
   "ocaml" {>= "4.07"}
   "dune" {>= "2.4.0"}
-  "why3" {>= "1.4.0"}
   "gospel"
-  "sexplib"
-]
-pin-depends: [
-  "gospel.dev" "git+https://github.com/ocaml-gospel/gospel#9e0c21d385888d79944a1d397c46ddfd52d5bf12"
+  "why3" {>= "1.4.0"}
+  "ppxlib" {>= "0.23.0"}
+  "ocaml-compiler-libs"
 ]
 
-synopsis: "A Why3 plugin to read GOSPEL files"
+pin-depends: [
+  [ "gospel.dev" "git+https://github.com/ocaml-gospel/gospel#33db0e653e9e247c03839f4df18efa329d58e473" ]
+]

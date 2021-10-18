@@ -39,7 +39,7 @@ let use_array loc =
 let read_file file nm c =
   let lb = Lexing.from_channel c in
   P.Location.init lb file;
-  Gospel.Parser_frontend.(parse_gospel (parse_ocaml_lb lb) nm)
+  Gospel.Parser_frontend.(parse_gospel ~filename:file (parse_ocaml_lb lb) nm)
 
 let type_check name nm sigs =
   let md = Gospel.Tmodule.init_muc name in

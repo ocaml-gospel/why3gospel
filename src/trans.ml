@@ -9,6 +9,7 @@
 (**************************************************************************)
 
 module T = Gospel.Tast
+module Th = Gospel.Tast_helper
 open Ppxlib
 open Gdriver
 open Why3
@@ -134,7 +135,7 @@ module Term = struct
     | Tt.Tiff      -> Dterm.DTiff
 
   let rec term info t =
-    let id_loc = map_opt_default location dummy_loc t.Tt.t_loc in
+    let id_loc = location t.Tt.t_loc in
     let mk_term term_desc = mk_term term_desc id_loc in
     let t_node = function
       | Tt.Ttrue    -> Ttrue
@@ -154,14 +155,19 @@ module Term = struct
       | Tt.Tcase (t, pat_term_list) ->
           let f_pair (pat, t) = pattern pat, term info t in
           Tcase (term info t, List.map f_pair pat_term_list)
-      | Tt.Tquant (q, vs_list, trigger, t) ->
-          let mk_trigger t = List.map (term info) t in
-          let trigger = List.map mk_trigger trigger in
+      | Tt.Tquant (q, vs_list, t) ->
           let binder_list = List.map (binder_of_vsymbol info) vs_list in
-          Tquant (quant q, binder_list, trigger, term info t)
+          Tquant (quant q, binder_list, [], term info t)
       | Tt.Tbinop (op, t1, t2) ->
           Tbinop (term info t1, binop op, term info t2)
-      | Tt.Tapp (ls, []) ->
+      | Tt.Tfield (t, f) ->
+        let id_loc = location f.ls_name.I.id_loc in
+        let id_str = match query_syntax f.ls_name.id_str with
+          | None   -> f.ls_name.id_str
+          | Some s -> s in
+        let id = mk_id id_str ~id_loc in
+        Tidapp (Qident id, [term info t])
+    | Tt.Tapp (ls, []) ->
           (* FIXME? is this the correct semantics for
                zero-arguments applications? *)
           let id = match query_syntax ls.ls_name.id_str with
@@ -238,10 +244,10 @@ let loc_of_vs vs = Term.(location vs.Tt.vs_name.I.id_loc)
 
 let ident_of_lb_arg = function
   | T.Lunit -> mk_id "()"
-  | lb -> Term.ident_of_vsymbol (T.vs_of_lb_arg lb)
+  | lb -> Term.ident_of_vsymbol (Th.vs_of_lb_arg lb)
 let loc_of_lb_arg = function
   | T.Lunit -> dummy_loc
-  | lb -> loc_of_vs (T.vs_of_lb_arg lb)
+  | lb -> loc_of_vs (Th.vs_of_lb_arg lb)
 
 (** Given the result type [sp_ret] of a function and a GOSPEL postcondition
     [post] (represented as a [term]), convert it into a Why3's Ptree

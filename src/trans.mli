@@ -18,4 +18,4 @@ type gdecl =
 
 val signature : Info.info -> Gospel.Tast.signature -> gdecl list list
 (** [signature info s] is the translated [gdecl] corresponding to the GOPEL
-   signature [s]. *)
+    signature [s]. *)

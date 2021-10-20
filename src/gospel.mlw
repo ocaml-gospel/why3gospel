@@ -32,10 +32,10 @@ module Stdlib
   type seq 'a = Seq.seq 'a
 
   function (++) (s t: seq 'a) : seq 'a = Seq.(++) s t
-  function ([]) (s: seq 'a) (i:integer): 'a = Seq.([]) s i
-  function ([..]) (s: seq 'a) (i1 i2: int): seq 'a = Seq.([..]) s i1 i2
-  function ([.._]) (s: seq 'a) (i: int): seq 'a = Seq.([.._]) s i
-  function ([_..]) (s: seq 'a) (i: int): seq 'a = Seq.([_..]) s i
+  function ([]) (s: seq 'a) (i: integer): 'a = Seq.([]) s i
+  function ([..]) (s: seq 'a) (i1 i2: integer): seq 'a = Seq.([..]) s i1 i2
+  function ([.._]) (s: seq 'a) (i: integer): seq 'a = Seq.([.._]) s i
+  function ([_..]) (s: seq 'a) (i: integer): seq 'a = Seq.([_..]) s i
 
   scope Bag
     use export bag.Bag
@@ -73,6 +73,42 @@ module Stdlib
     function sum (f: 'a -> integer) (x: fset 'a) : integer = FSum.sum x f
   end
   type set 'a = Set.FS.fset 'a
+
+  scope List
+
+    use list.Length as LL
+    use list.HdTlNoOpt as LOpt
+    use list.NthNoOpt as LNth
+    use list.Nth as LNthOpt
+    use list.Reverse as LRev
+    use list.Mem as LMem
+
+    type t 'a = list 'a
+
+    function length (l: t 'a) : integer = LL.length l
+
+    function hd (l: t 'a) : 'a = LOpt.hd l
+    function tl (l: t 'a) : t 'a = LOpt.tl l
+
+    function nth (l: t 'a) (i: integer) : 'a = LNth.nth i l
+    function nth_opt (l: t 'a) (i: integer) : option 'a = LNthOpt.nth i l
+
+    function rev (l: t 'a) : t 'a = LRev.reverse l
+
+    (* FIXME? Should we provide pre-conditions for [init_aux] and [init] ? *)
+    let rec function init_aux (i n: integer) (f: integer -> 'a) : t 'a
+      variant { n - i }
+    = if i >= n then Nil
+      else Cons (f i) (init_aux (i+1) n f)
+
+    function init (n: integer) (f: integer -> 'a) : t 'a
+    = init_aux 0 n f
+
+    predicate mem (x: 'a) (l: t 'a) = LMem.mem x l
+
+    function to_seq (l: t 'a) : seq 'a = Seq.of_list l
+
+  end
 
   use int.ComputerDivision
   function (/) (x y: int) : int = div x y

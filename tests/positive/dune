@@ -1,13 +1,5 @@
 (rule
- (targets list_stdlib.mli.output)
- (action
-  (with-outputs-to
-   %{targets}
-   (with-accepted-exit-codes
-    (or :standard 125)
-    (system "why3 prove %{dep:list_stdlib.mli}")))))
-
-(rule
  (alias runtest)
  (action
-  (diff %{dep:list_stdlib.mli.expected} %{dep:list_stdlib.mli.output})))
+  (with-accepted-exit-codes 0
+    (system "why3 prove %{dep:list_stdlib.mli}"))))

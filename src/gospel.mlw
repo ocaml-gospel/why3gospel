@@ -76,37 +76,95 @@ module Stdlib
 
   scope List
 
-    use list.Length as LL
-    use list.HdTlNoOpt as LOpt
+    use export list.Length
+    use export list.HdTlNoOpt
     use list.NthNoOpt as LNth
     use list.Nth as LNthOpt
-    use list.Reverse as LRev
+    use export list.Reverse
     use list.Mem as LMem
+    use seq.ToList as SL
+    use list.FoldLeft as LFoldl
+    use list.FoldRight as LFoldr
+    use list.Quant as LQuant
 
     type t 'a = list 'a
-
-    function length (l: t 'a) : integer = LL.length l
-
-    function hd (l: t 'a) : 'a = LOpt.hd l
-    function tl (l: t 'a) : t 'a = LOpt.tl l
 
     function nth (l: t 'a) (i: integer) : 'a = LNth.nth i l
     function nth_opt (l: t 'a) (i: integer) : option 'a = LNthOpt.nth i l
 
-    function rev (l: t 'a) : t 'a = LRev.reverse l
+    function rev (l: t 'a) : t 'a = reverse l
 
     (* FIXME? Should we provide pre-conditions for [init_aux] and [init] ? *)
     let rec function init_aux (i n: integer) (f: integer -> 'a) : t 'a
       variant { n - i }
     = if i >= n then Nil
-      else Cons (f i) (init_aux (i+1) n f)
+      else Cons (f i) (init_aux (i + 1) n f)
 
-    function init (n: integer) (f: integer -> 'a) : t 'a
-    = init_aux 0 n f
+    function init (n: integer) (f: integer -> 'a) : t 'a =
+      init_aux 0 n f
+
+    function map (f: 'a -> 'b) (l: t 'a) : t 'b =
+      match l with
+      | Nil -> Nil
+      | Cons x r -> Cons (f x) (map f r)
+      end
+
+    function mapi_aux (i: integer) (f: integer -> 'a -> 'b) (l: list 'a) :
+      list 'b
+    = match l with
+      | Nil -> Nil
+      | Cons x r -> Cons (f i x) (mapi_aux (i + 1) f r)
+      end
+
+    function mapi (f: integer -> 'a -> 'b) (l: t 'a) : t 'b =
+      mapi_aux 0 f l
+
+    function fold_left (f: 'a -> 'b -> 'a) (init: 'a) (l: t 'b) : 'a =
+      LFoldl.fold_left f init l
+
+    function fold_right (f: 'b -> 'a -> 'a) (l: t 'b) (init: 'a) : 'a =
+      LFoldr.fold_right f l init
+
+    let rec function map2 (f: 'a -> 'b -> 'c) (l: t 'a) (l': t 'b) : t 'c
+      requires { length l = length l' }
+      variant  { l }
+    = match l, l' with
+      | Nil, Nil -> Nil
+      | Cons a1 l1, Cons a2 l2 -> Cons (f a1 a2) (map2 f l1 l2)
+      | _ -> absurd
+      end
+
+    predicate for_all (f: 'a -> bool) (l: t 'a) =
+      LQuant.for_all f l
+
+    predicate _exists (f: 'a -> bool) (l: t 'a) =
+      LQuant.for_some f l
+
+    (* Cannot use [let predicate] because of the [absurd] case *)
+    (* FIXME? Should we provide post-conditions to the following functions ? *)
+    let rec function for_all2 (f: 'a -> 'b -> bool) (l: t 'a) (l': t 'b) : bool
+      requires { length l = length l' }
+      variant  { l }
+    = match l, l' with
+      | Nil, Nil -> true
+      | Cons a1 l1, Cons a2 l2 -> f a1 a2 && for_all2 f l1 l2
+      | _ -> absurd
+      end
+
+    let rec function _exists2 (f: 'a -> 'b -> bool) (l: t 'a) (l': t 'b) : bool
+      requires { length l = length l' }
+      variant  { l }
+    = match l, l' with
+      | Nil, Nil -> false
+      | Cons a1 l1, Cons a2 l2 -> f a1 a2 || _exists2 f l1 l2
+      | _ -> absurd
+      end
 
     predicate mem (x: 'a) (l: t 'a) = LMem.mem x l
 
     function to_seq (l: t 'a) : seq 'a = Seq.of_list l
+
+    function of_seq (l: seq 'a) : t 'a = SL.to_list l
 
   end
 

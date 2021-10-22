@@ -52,6 +52,8 @@ module Stdlib
 
     predicate permut (a1 a2: array 'a) = P.permut_all a1 a2
     predicate permut_sub (a1 a2: array 'a) (l u: int) = P.permut_sub a1 a2 l u
+
+    function to_seq (a: array 'a) : seq 'a = a.elts
   end
   type array 'a = Array.array 'a
 
@@ -84,7 +86,7 @@ module Stdlib
 
   let constant max_int : int = I.max_int63
   let constant min_int : int = I.min_int63
-  
+
   function fst (x : ('a, 'b)) : 'a = let (f, _) = x in f
   function snd (x : ('a, 'b)) : 'b = let (_, s) = x in s
 

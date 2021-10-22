@@ -38,14 +38,80 @@ module Stdlib
   function ([_..]) (s: seq 'a) (i: integer): seq 'a = Seq.([_..]) s i
 
   scope Bag
-    use export bag.Bag
+    use bag.Bag as B
+
+    type t 'a = B.bag 'a
+
+    function occurrences (x: 'a) (b: t 'a): integer =
+      B.nb_occ x b
+
+    (*@ function compare (b b': 'a t) : int *)
+
+    function empty : t 'a = B.empty_bag
+
+    predicate is_empty (b: t 'a) = b = empty
+
+    predicate mem (x: 'a) (b: t 'a) = B.mem x b
+
+    function add (x: 'a) (b: t 'a) : t 'a = B.add x b
+
+    function singleton (x: 'a) : t 'a = B.singleton
+
+    function remove (x: 'a) (b: t 'a) : t 'a =
+      B.diff b (B.singleton x)
+
+    function union (b b': t 'a) : t 'a
+
+    (*@ function sum (b b': 'a t) : 'a t *)
+
+    (*@ function inter (b b': 'a t) : 'a t *)
+
+    (*@ predicate disjoint (b b': 'a t) *)
+
+    (*@ function diff (b b': 'a t) : 'a t *)
+
+    (*@ predicate subset (b b': 'a t) *)
+
+    (*@ function choose (b: 'a t) : integer *)
+
+    (*@ function choose_opt (b: 'a t) : 'a option *)
+
+    (*@ function map (f: 'a -> 'b) (b: 'a t) : 'b t *)
+
+    (*@ function fold (f: 'a -> 'b -> 'b) (b: 'a t) : 'b *)
+
+    (*@ predicate for_all (f: 'a -> bool) (b: 'a t) *)
+
+    (*@ predicate _exists (f: 'a -> bool) (b: 'a t) *)
+
+    (*@ function filter (f: 'a -> bool) (b: 'a t) : 'a t *)
+
+    (*@ function filter_map (f: 'a -> 'a option) (b: 'a t) : 'a t *)
+
+    (*@ function partition (f: 'a -> bool) (b: 'a t) : ('a t * 'a t) *)
+
+    (*@ function cardinal (b: 'a t) : int *)
+
+    (*@ function elements (b: 'a t) : 'a list *)
+
+    (*@ function to_list (b: 'a t) : 'a list *)
+    function of_list (l: list 'a) : t 'a
+
+    (*@ function to_seq (b: 'a t) : 'a Seq.t *)
+    (*@ function of_seq (s: 'a Seq.t) : 'a t *)
+
+    (*@ function of_array (a: 'a array) : 'a t *)
+
   end
-  type bag 'a = Bag.bag 'a
+  type bag 'a = Bag.B.bag 'a
 
   use export ref.Ref
 
   scope Array
     use export mach.array.Array63
+
+    type t 'a = array 'a
+
     function get (a : array 'a) (i: int) : 'a = a[i]
 
     use mach.array.Array63Permut as P

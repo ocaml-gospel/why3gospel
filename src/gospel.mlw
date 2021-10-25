@@ -62,19 +62,30 @@ module Stdlib
 
     function union (b b': t 'a) : t 'a
 
-    (*@ function sum (b b': 'a t) : 'a t *)
+    axiom def_union:
+      forall x: 'a, b b': t 'a.
+      occurrences x (union b b') = max (occurrences x b) (occurrences x b')
 
-    (*@ function inter (b b': 'a t) : 'a t *)
+    function sum (b b': t 'a) : t 'a =
+      B.union b b'
 
-    (*@ predicate disjoint (b b': 'a t) *)
+    function inter (b b': t 'a) : t 'a =
+      B.inter b b'
 
-    (*@ function diff (b b': 'a t) : 'a t *)
+    predicate disjoint (b b': t 'a) =
+      B.inter b b' = empty
 
-    (*@ predicate subset (b b': 'a t) *)
+    function diff (b b': t 'a) : t 'a =
+      B.diff b b'
 
-    (*@ function choose (b: 'a t) : integer *)
+    predicate subset (b b': 'a t) =
+      forall x. occurrences x b <= occurrences x b'
 
-    (*@ function choose_opt (b: 'a t) : 'a option *)
+    function choose (b: 'a t) : integer =
+      B.choose b
+
+    function choose_opt (b: 'a t) : 'a option =
+      if b = empty then None else Some (choose b)
 
     (*@ function map (f: 'a -> 'b) (b: 'a t) : 'b t *)
 

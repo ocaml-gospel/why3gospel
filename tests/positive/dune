@@ -1,5 +1,3 @@
-(rule
- (alias runtest)
- (action
-  (with-accepted-exit-codes 0
-    (system "why3 prove %{dep:list_stdlib.mli}"))))
+(cram
+ (deps
+  (source_tree .)))

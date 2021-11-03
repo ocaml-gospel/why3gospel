@@ -14,7 +14,6 @@ open Why3
 open Ptree
 module Mstr = Why3.Wstdlib.Mstr
 
-let debug = ref true
 let print_modules = Debug.lookup_flag "print_modules"
 
 let mk_id ?(loc = Loc.dummy_position) name =
@@ -109,7 +108,6 @@ let read_extra_file file =
 
 let read_channel env path file c =
   let open Typing in
-  if !debug then Format.eprintf "reading file '%s'@." file;
   let extra_uses, extra_vals = read_extra_file file in
   let nm =
     let f = Filename.basename file in
@@ -132,23 +130,6 @@ let read_channel env path file c =
         Typing.close_scope ~import:true loc
   in
   let f = List.flatten sigs in
-  (* FIXME *)
-  (* For debugging only: *)
-  let rec pp_list pp fmt l =
-    match l with
-    | [] -> ()
-    | x :: r ->
-        Format.eprintf "%a" pp x;
-        pp_list pp fmt r
-  in
-  let rec pp_decl _ d =
-    match d with
-    | Gdecl d -> Format.eprintf "%a@." Mlw_printer.pp_decl d
-    | Gmodule (_loc, id, dl) ->
-        Format.eprintf "@[<hv 2>scope %s@\n%a@]@\nend@." id.id_str
-          (pp_list pp_decl) dl
-  in
-  pp_list pp_decl Format.err_formatter f;
   List.iter add_decl f;
   close_module Loc.dummy_position;
   let mm = close_file () in

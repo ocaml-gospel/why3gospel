@@ -55,7 +55,7 @@ module Stdlib
 
     function add (x: 'a) (b: t 'a) : t 'a = B.add x b
 
-    function singleton (x: 'a) : t 'a = B.singleton
+    function singleton (x: 'a) : t 'a = B.singleton x
 
     function remove (x: 'a) (b: t 'a) : t 'a =
       B.diff b (B.singleton x)
@@ -78,40 +78,40 @@ module Stdlib
     function diff (b b': t 'a) : t 'a =
       B.diff b b'
 
-    predicate subset (b b': 'a t) =
+    predicate subset (b b': t 'a) =
       forall x. occurrences x b <= occurrences x b'
 
-    function choose (b: 'a t) : integer =
+    function choose (b: t 'a) : 'a =
       B.choose b
 
-    function choose_opt (b: 'a t) : 'a option =
+    function choose_opt (b: t 'a) : option 'a =
       if b = empty then None else Some (choose b)
 
-    (*@ function map (f: 'a -> 'b) (b: 'a t) : 'b t *)
+    (*@ function map (f: 'a -> 'b) (b: t 'a) : t 'b *)
 
-    (*@ function fold (f: 'a -> 'b -> 'b) (b: 'a t) : 'b *)
+    (*@ function fold (f: 'a -> 'b -> 'b) (b: t 'a) : 'b *)
 
-    (*@ predicate for_all (f: 'a -> bool) (b: 'a t) *)
+    (*@ predicate for_all (f: 'a -> bool) (b: t 'a) *)
 
-    (*@ predicate _exists (f: 'a -> bool) (b: 'a t) *)
+    (*@ predicate _exists (f: 'a -> bool) (b: t 'a) *)
 
-    (*@ function filter (f: 'a -> bool) (b: 'a t) : 'a t *)
+    (*@ function filter (f: 'a -> bool) (b: t 'a) : t 'a *)
 
-    (*@ function filter_map (f: 'a -> 'a option) (b: 'a t) : 'a t *)
+    (*@ function filter_map (f: 'a -> option 'a) (b: t 'a) : t 'a *)
 
-    (*@ function partition (f: 'a -> bool) (b: 'a t) : ('a t * 'a t) *)
+    (*@ function partition (f: 'a -> bool) (b: t 'a) : (t 'a * t 'a) *)
 
-    (*@ function cardinal (b: 'a t) : int *)
+    (*@ function cardinal (b: t 'a) : int *)
 
-    (*@ function elements (b: 'a t) : 'a list *)
+    (*@ function elements (b: t 'a) : list 'a *)
 
-    (*@ function to_list (b: 'a t) : 'a list *)
+    (*@ function to_list (b: t 'a) : list 'a *)
     function of_list (l: list 'a) : t 'a
 
-    (*@ function to_seq (b: 'a t) : 'a Seq.t *)
-    (*@ function of_seq (s: 'a Seq.t) : 'a t *)
+    (*@ function to_seq (b: t 'a) : Seq.t 'a *)
+    (*@ function of_seq (s: Seq.t 'a) : t 'a *)
 
-    (*@ function of_array (a: 'a array) : 'a t *)
+    (*@ function of_array (a: array 'a) : t 'a *)
 
   end
   type bag 'a = Bag.B.bag 'a

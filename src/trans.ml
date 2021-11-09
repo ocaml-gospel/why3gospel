@@ -19,7 +19,6 @@ type gdecl = Gdecl of decl | Gmodule of Loc.position * ident * gdecl list
 
 let location { loc_start = b; loc_end = e } = Loc.extract (b, e)
 let dummy_loc = Loc.dummy_position
-let map_opt_default f d = function None -> d | Some x -> f x
 
 let mk_id ?(id_ats = []) ?(id_loc = Loc.dummy_position) id_str =
   let id_str =
@@ -75,7 +74,7 @@ module Term = struct
     | Tt.Tlambda -> Dterm.DTlambda
 
   let rec pattern pat =
-    let loc = map_opt_default location dummy_loc pat.Tt.p_loc in
+    let loc = location pat.Tt.p_loc in
     let mk_pattern pat_desc = mk_pattern pat_desc loc in
     let p_node = function
       | Tt.Pwild -> Pwild

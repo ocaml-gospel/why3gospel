@@ -4,8 +4,11 @@ type 'a t
 (*@ function to_bag (t: 'a t) : 'a bag = t.view *)
 (*@ coercion *)
 
-val f1 : 'a -> 'a t -> int
-(*@ r = f1 x t
+val f1 : int -> 'a -> 'a t -> int
+(*@ r = f1 a x t
+      requires a = 0
+      requires Bag.occurrences x t = 42
+      requires Bag.cardinal t = 42
       ensures r = Bag.occurrences x t *)
 
 val f2 : 'a t -> bool

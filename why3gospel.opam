@@ -23,7 +23,7 @@ build: [
 
 depends: [
   "ocaml" {>= "4.07"}
-  "dune" {>= "2.4.0"}
+  "dune" {>= "2.7.0"}
   "gospel"
   "why3" {>= "1.4.0"}
   "ppxlib" {>= "0.23.0"}
@@ -31,5 +31,5 @@ depends: [
 ]
 
 pin-depends: [
-  [ "gospel.dev" "git+https://github.com/ocaml-gospel/gospel#65587404d2167840bd5f09bbb9da29c49ee3fb83" ]
+  [ "gospel.dev" "git+https://github.com/ocaml-gospel/gospel#da93ff37b69fb0b0759c4a096b691e583fea0144" ]
 ]

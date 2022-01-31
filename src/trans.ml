@@ -326,7 +326,8 @@ let spec_with_checks info val_spec pre checks =
 
 let spec info val_spec =
   {
-    sp_pre = List.map (fun t -> term info t) val_spec.T.sp_pre;
+    sp_pre =
+      List.map (fun t -> term info t) (val_spec.T.sp_pre @ val_spec.T.sp_checks);
     sp_post = sp_post info val_spec.sp_ret val_spec.sp_post;
     sp_xpost = sp_xpost info val_spec.sp_xpost;
     sp_reads = [];
@@ -395,17 +396,18 @@ let val_decl info vd g =
     in
     match vd.T.vd_spec with
     | None -> [ mk_val (mk_id vd_str) params ret pat mask empty_spec ]
-    | Some s -> (
-        match (s.sp_pre, s.sp_checks) with
-        | _, [] -> [ mk_val (mk_id vd_str) params ret pat mask (spec info s) ]
-        | pre, checks ->
-            let id_unsafe = mk_id ("unsafe_" ^ vd_str) in
-            let checks_term = List.map (term info) checks in
-            let spec_checks = spec_with_checks info s pre checks_term in
-            [
-              mk_val id_unsafe params ret pat mask (spec info s);
-              mk_val (mk_id vd_str) params ret pat mask spec_checks;
-            ])
+    | Some s ->
+        let unsafe_spec = spec info s in
+        if s.sp_checks = [] then
+          [ mk_val (mk_id vd_str) params ret pat mask unsafe_spec ]
+        else
+          let id_unsafe = mk_id ("unsafe_" ^ vd_str) in
+          let checks_term = List.map (term info) s.sp_checks in
+          let spec_checks = spec_with_checks info s s.sp_pre checks_term in
+          [
+            mk_val id_unsafe params ret pat mask unsafe_spec;
+            mk_val (mk_id vd_str) params ret pat mask spec_checks;
+          ]
   in
   let params, ret, pat, mask =
     let params, pat, mask =

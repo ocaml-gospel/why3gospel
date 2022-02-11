@@ -31,5 +31,5 @@ depends: [
 ]
 
 pin-depends: [
-  [ "gospel.dev" "git+https://github.com/ocaml-gospel/gospel#da93ff37b69fb0b0759c4a096b691e583fea0144" ]
+  "gospel.dev" "git+https://github.com/ocaml-gospel/gospel#65e62964312f612e2207f4bda707de5f700179ac"
 ]

@@ -32,7 +32,8 @@ let extra_use s = use ~import:true (Qdot (Qident (mk_id "gospel"), mk_id s))
 let read_file file nm c =
   let lb = Lexing.from_channel c in
   P.Location.init lb file;
-  Gospel.Parser_frontend.(parse_gospel ~filename:file (parse_ocaml_lb lb) nm)
+  let ocaml_sig = Gospel.Parser_frontend.parse_ocaml_signature_lb lb in
+  Gospel.Parser_frontend.(parse_signature_gospel ~filename:file ocaml_sig nm)
 
 let type_check name nm sigs =
   let md = Gospel.Tmodule.init_muc name in

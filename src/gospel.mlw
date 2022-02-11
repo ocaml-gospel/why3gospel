@@ -13,25 +13,49 @@
 
 module Stdlib
 
-  use export int.Int
-  use export int.MinMax
+  use int.Int
   use export option.Option
   use export ocaml.Exceptions
   use export ocaml.Sys
   use export ocaml.Pervasives
   use export list.List
 
+  use int.MinMax
+
   type integer = int
 
-  scope Seq
-    use export seq.Seq
+  function (+) (x y: integer) : integer = Int.(+) x y
+  function (-) (x y: integer) : integer = Int.(-) x y
+  function ( * ) (x y: integer) : integer = Int.( * ) x y
 
+  predicate (>) (x y: integer) = Int.(>) x y
+  predicate (>=) (x y: integer) = Int.(>=) x y
+  predicate (<) (x y: integer) = Int.(<) x y
+  predicate (<=) (x y: integer) = Int.(<=) x y
+
+  use int.ComputerDivision
+
+  function mod (x y: int) : int = ComputerDivision.mod x y
+
+  scope Seq
+
+    use seq.FreeMonoid
+    use import seq.Seq as Seq
     type t 'a = seq 'a
+
+    function length (s: seq 'a) : int = Seq.length s
 
     function init (i: int) (f: int -> 'a) : seq 'a = create i f
 
     use export seq.OfList
+    use seq.Reverse
+
+    function cons (x: 'a) (s: seq 'a) : seq 'a = Seq.cons x s
+    function rev (s: seq 'a) : seq 'a = reverse s
+
   end
+  import Seq
+
   type seq 'a = Seq.seq 'a
 
   function (++) (s t: seq 'a) : seq 'a = Seq.(++) s t
@@ -61,7 +85,7 @@ module Stdlib
 
   scope List
 
-    use export list.Length
+    use list.Length
     use export list.HdTlNoOpt
     use list.NthNoOpt as LNth
     use list.Nth as LNthOpt
@@ -73,6 +97,8 @@ module Stdlib
     use list.Quant as LQuant
 
     type t 'a = list 'a
+
+    function length (l: list 'a) : int = Length.length l
 
     function nth (l: t 'a) (i: integer) : 'a = LNth.nth i l
     function nth_opt (l: t 'a) (i: integer) : option 'a = LNthOpt.nth i l
@@ -234,9 +260,11 @@ module Stdlib
   type bag 'a = Bag.B.bag 'a
 
   scope Array
-    use export mach.array.Array63
+    use import mach.array.Array63 as Array
 
     type t 'a = array 'a
+
+    function length (a: t 'a) : integer = Array.length a
 
     function get (a: array 'a) (i: int) : 'a = a[i]
 
@@ -291,6 +319,8 @@ module Stdlib
     predicate permut_sub (a1 a2: array 'a) (l u: int) = P.permut_sub a1 a2 l u
 
   end
+  import Array
+
   type array 'a = Array.array 'a
 
   (* Arithmetic *)
@@ -301,17 +331,17 @@ module Stdlib
   use int.Power as P
   function pow (x y: integer) : integer = P.power x y
 
-  use mach.int.Int63 as I
-  type int63 = I.int63
-  function integer_of_int (x: int63) : integer = I.to_int x
+  use export mach.int.Int63
+  (* type int63 = I.int63 *)
+  function integer_of_int (x: int63) : integer = to_int x
 
-  let constant max_int : integer = I.max_int63
-  let constant min_int : integer = I.min_int63
+  (* let constant max_int : integer = I.max_int63 *)
+  (* let constant min_int : integer = I.min_int63 *)
 
   function succ (x: integer) : integer = [@inline:trivial] x+1
   function pred (x: integer) : integer = [@inline:trivial] x-1
 
-  use export int.Abs
+  (* use export int.Abs *)
 
   function fst (x : ('a, 'b)) : 'a = let (f, _) = x in f
   function snd (x : ('a, 'b)) : 'b = let (_, s) = x in s
@@ -324,7 +354,6 @@ module Stdlib
   function shift_left (x y: integer) : integer
   function shift_right (x y: integer) : integer
   function shift_right_trunc (x y: integer) : integer
-
 
   scope Order
     predicate is_pre_order (cmp: 'a -> 'a -> int63) =

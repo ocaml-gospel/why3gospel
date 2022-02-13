@@ -332,7 +332,6 @@ module Stdlib
   function pow (x y: integer) : integer = P.power x y
 
   use export mach.int.Int63
-  (* type int63 = I.int63 *)
   function integer_of_int (x: int63) : integer = to_int x
 
   (* let constant max_int : integer = I.max_int63 *)

@@ -357,13 +357,13 @@ module Gospelstdlib
   constant max_int : integer = I.max_int63
   constant min_int : integer = I.min_int63
 
-  (* function succ (x: integer) : integer = [@inline:trivial] x+1 *)
-  (* function pred (x: integer) : integer = [@inline:trivial] x-1 *)
+  function succ (x: integer) : integer = [@inline:trivial] x+1
+  function pred (x: integer) : integer = [@inline:trivial] x-1
 
   (* (\* use export int.Abs *\) *)
 
-  (* function fst (x : ('a, 'b)) : 'a = let (f, _) = x in f *)
-  (* function snd (x : ('a, 'b)) : 'b = let (_, s) = x in s *)
+  function fst (x : ('a, 'b)) : 'a = let (f, _) = x in f
+  function snd (x : ('a, 'b)) : 'b = let (_, s) = x in s
 
   (* (\* TODO give defs/axioms to the following *\) *)
   (* function logand (x y: integer) : integer *)

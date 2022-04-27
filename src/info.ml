@@ -10,7 +10,7 @@ module XS = struct
   let hash = (Hashtbl.hash : Gospel.Ttypes.xsymbol -> int)
 end
 
-module Hls = Hashtbl.Make (Gospel.Tterm.LS)
+module Hls = Hashtbl.Make (Gospel.Symbols.LS)
 module Hts = Hashtbl.Make (TS)
 module Hxs = Hashtbl.Make (XS)
 

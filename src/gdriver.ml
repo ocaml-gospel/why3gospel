@@ -9,8 +9,8 @@
 (**************************************************************************)
 
 open Gospel.Ttypes
-open Gospel.Tterm
 open Gospel.Tmodule
+open Gospel.Symbols
 module Hid = Hashtbl.Make (Gospel.Identifier.Ident)
 module Mstr = Gospel.Tmodule.Mstr
 
@@ -30,6 +30,8 @@ let init ns =
   in
   visit [] ns;
   let ts_int = ns_find_ts ns [ "Gospelstdlib"; "int" ] in
-  Hid.replace driver ts_int.ts_ident [ "int63" ]
+  Hid.replace driver ts_int.ts_ident [ "int63" ];
+  let ls_nil = ns_find_ls ns [ "[]" ] in
+  Hid.replace driver ls_nil.ls_name [ "Nil" ]
 
 let query_syntax str = Hid.find_opt driver str

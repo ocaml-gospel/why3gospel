@@ -36,8 +36,11 @@ let read_file file nm c =
   Gospel.Parser_frontend.(parse_signature_gospel ~filename:file ocaml_sig nm)
 
 let type_check name nm sigs =
+  (* Include current file directory during type-checking.
+     This is closer to how [gospel check] actually works. *)
   let md = Gospel.Tmodule.init_muc name in
-  let penv = Gospel.Typing.penv [] (Gospel.Utils.Sstr.singleton nm) in
+  let load_path = [ Filename.dirname name ] in
+  let penv = Gospel.Typing.penv load_path (Gospel.Utils.Sstr.singleton nm) in
   let md = List.fold_left (Gospel.Typing.type_sig_item penv) md sigs in
   assert (List.length md.muc_import = 1);
   let ns = List.hd md.muc_import in
@@ -120,7 +123,7 @@ let read_channel env path file c =
   Gdriver.init ns;
   let sigs = signature Info.empty_info f.fl_sigs in
   open_file env path;
-  let id = mk_id "Sig" in
+  let id = mk_id nm in
   open_module id;
   List.iter extra_use extra_uses;
   let rec add_decl = function

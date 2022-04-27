@@ -53,19 +53,20 @@ open Info
 
 module Term = struct
   module Tt = Gospel.Tterm
+  module Ts = Gospel.Symbols
   module Ty = Gospel.Ttypes
   module I = Gospel.Identifier.Ident
 
   let mk_term term_desc term_loc = { term_desc; term_loc }
   let mk_pattern pat_desc pat_loc = { pat_desc; pat_loc }
 
-  let ident_of_vsymbol Tt.{ vs_name = name } =
+  let ident_of_vsymbol Ts.{ vs_name = name } =
     mk_id name.I.id_str ~id_loc:(location name.I.id_loc)
 
   let ident_of_tvsymbol Ty.{ tv_name = name } =
     mk_id name.I.id_str ~id_loc:(location name.I.id_loc)
 
-  let ident_of_lsymbol Tt.{ ls_name = name } =
+  let ident_of_lsymbol Ts.{ ls_name = name } =
     mk_id name.I.id_str ~id_loc:(location name.I.id_loc)
 
   let quant = function
@@ -74,14 +75,16 @@ module Term = struct
     | Tt.Tlambda -> Dterm.DTlambda
 
   let rec pattern pat =
-    let loc = location pat.Tt.p_loc in
+    let loc = match pat.Tt.p_loc with
+      | None -> dummy_loc
+      | Some l -> location l in
     let mk_pattern pat_desc = mk_pattern pat_desc loc in
     let p_node = function
       | Tt.Pwild -> Pwild
       | Tt.Pvar vs -> Pvar (ident_of_vsymbol vs)
       | Tt.Por (p1, p2) -> Por (pattern p1, pattern p2)
       | Tt.Pas (p, vs) -> Pas (pattern p, ident_of_vsymbol vs, false)
-      | Tt.Papp (ls, pat_list) when Tt.is_fs_tuple ls ->
+      | Tt.Papp (ls, pat_list) when Ts.is_fs_tuple ls ->
           Ptuple (List.map pattern pat_list)
       | Tt.Papp (ls, pat_list) ->
           let id_loc = location ls.ls_name.id_loc in
@@ -118,12 +121,12 @@ module Term = struct
           PTtyapp (q, ty_arg))
 
   let binder_of_vsymbol info vs =
-    let loc = vs.Tt.vs_name.I.id_loc in
+    let loc = vs.Ts.vs_name.I.id_loc in
     let id = ident_of_vsymbol vs in
     let pty = ty info vs.vs_ty in
     (location loc, Some id, false, Some pty)
 
-  let param_of_vsymbol info Tt.{ vs_name; vs_ty } =
+  let param_of_vsymbol info Ts.{ vs_name; vs_ty } =
     let id_loc = location vs_name.I.id_loc in
     let id = mk_id vs_name.I.id_str ~id_loc in
     let pty = ty info vs_ty in
@@ -171,7 +174,7 @@ module Term = struct
           let id_loc = location ls.ls_name.I.id_loc in
           let q = query_path id_loc ls.ls_name in
           Tident q
-      | Tt.Tapp (ls, term_list) when Tt.ls_equal ls Tt.fs_apply -> (
+      | Tt.Tapp (ls, term_list) when Ts.ls_equal ls Ts.fs_apply -> (
           match term_list with
           | [ fs; arg ] -> Tapply (term info fs, term info arg)
           | _ -> assert false)
@@ -201,7 +204,7 @@ let td_vis_from_manifest = function None -> Private | Some _ -> Public
 let td_def info td_fields td_manifest =
   let field_of_lsymbol (ls, mut) =
     let id = Term.ident_of_lsymbol ls in
-    let pty = Term.ty info Term.(Opt.get ls.Tt.ls_value) in
+    let pty = Term.ty info Term.(Opt.get ls.Ts.ls_value) in
     mk_field id.id_loc id pty ~mut ~ghost:true
   in
   let td_def_of_ty_fields ty_fields =
@@ -241,7 +244,7 @@ let mk_logic_decl ld_loc ld_ident ld_params ld_type ld_def =
   { ld_loc; ld_ident; ld_params; ld_type; ld_def }
 
 let mk_ret_type = function [ ty ] -> ty | l -> PTtuple l
-let loc_of_vs vs = Term.(location vs.Tt.vs_name.I.id_loc)
+let loc_of_vs vs = Term.(location vs.Ts.vs_name.I.id_loc)
 
 let ident_of_lb_arg = function
   | T.Lunit -> mk_id "()"
@@ -375,8 +378,8 @@ let val_decl info vd g =
   let mk_ghost_param = function
     | T.Lunit | T.Lnone _ | Lnamed _ | Loptional _ -> assert false
     | T.Lghost vs ->
-        let id_loc = location vs.Tt.vs_name.I.id_loc in
-        let id = Some (mk_id vs.Tt.vs_name.I.id_str ~id_loc) in
+        let id_loc = location vs.Ts.vs_name.I.id_loc in
+        let id = Some (mk_id vs.Ts.vs_name.I.id_str ~id_loc) in
         let pty = Term.ty info vs.vs_ty in
         (id_loc, id, true, pty)
   in
@@ -447,7 +450,7 @@ let val_decl info vd g =
 
 (** Convert GOSPEL logical declaration (function or predicate) into Why3's Ptree
     logical declaration. *)
-let function_ info (T.{ fun_ls = Tt.{ ls_name; ls_value } } as f) =
+let function_ info (T.{ fun_ls = { ls_name; ls_value } } as f) =
   add_ls info f.fun_ls;
   let loc = location f.T.fun_loc in
   let id_loc = location ls_name.I.id_loc in
@@ -544,7 +547,7 @@ let signature =
     | T.Sig_open ({ opn_id = [ "Gospelstdlib" ]; opn_loc }, true) ->
         (* The GOSPEL standard library is opened by default. We map it into a
            custom Why3 file. *)
-        [ Gdecl (sig_open "gospel" "Stdlib" (location opn_loc)) ]
+        [ Gdecl (sig_open "gospel" "Gospelstdlib" (location opn_loc)) ]
     | T.Sig_open ({ opn_id; opn_loc }, true) ->
         let loc = location opn_loc in
         List.map (fun mm -> Gdecl (sig_open "gospel" mm loc)) opn_id
@@ -557,7 +560,11 @@ let signature =
     | T.Sig_attribute _ -> []
     | T.Sig_extension _ (* of Oparsetree.extension * Oparsetree.attributes *) ->
         assert false (*TODO*)
-    | T.Sig_use _ (* of string *) -> assert false (*TODO*)
+    | T.Sig_use s ->
+        let loc = location i.T.sig_loc in
+        let s = String.uncapitalize_ascii s
+        and nm = String.capitalize_ascii s in
+        [ Gdecl (sig_open s nm loc) ]
     | T.Sig_function f -> [ Gdecl (function_ info f) ]
     | T.Sig_axiom ax -> [ Gdecl (axiom info ax) ]
   (*TODO*)

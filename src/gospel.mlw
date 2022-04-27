@@ -11,16 +11,21 @@
 (** This module mirrors the Gospel standard library.
     It is used in the Why3 modules built by the Gospel plug-in for Why3. *)
 
-module Stdlib
+module Gospelstdlib
 
   use int.Int
+  use import mach.int.Int63 as I
   use export option.Option
   use export ocaml.Exceptions
   use export ocaml.Sys
-  use export ocaml.Pervasives
   use export list.List
 
+  exception Failure string
+
   use int.MinMax
+
+  function (::) (x: 'a) (l: list 'a) : list 'a = Cons x l
+  (* function ([]) : list 'a = Nil *)
 
   type integer = int
 
@@ -33,36 +38,45 @@ module Stdlib
   predicate (<) (x y: integer) = Int.(<) x y
   predicate (<=) (x y: integer) = Int.(<=) x y
 
+  function max (x y: integer) : integer = MinMax.max x y
+  function min (x y: integer) : integer = MinMax.min x y
+
   use int.ComputerDivision
 
   function mod (x y: int) : int = ComputerDivision.mod x y
 
+  use import seq.Seq as S
+
   scope Seq
 
     use seq.FreeMonoid
-    use import seq.Seq as Seq
     type t 'a = seq 'a
 
-    function length (s: seq 'a) : int = Seq.length s
+    constant empty : seq 'a = S.empty
+
+    function length (s: seq 'a) : int = S.length s
 
     function init (i: int) (f: int -> 'a) : seq 'a = create i f
 
     use export seq.OfList
     use seq.Reverse
 
-    function cons (x: 'a) (s: seq 'a) : seq 'a = Seq.cons x s
+    function cons (x: 'a) (s: seq 'a) : seq 'a = S.cons x s
     function rev (s: seq 'a) : seq 'a = reverse s
+
+    function set (s: seq 'a) (i: int) (v: 'a) : seq 'a =
+      S.set s i v
 
   end
   import Seq
 
-  type seq 'a = Seq.seq 'a
+  type seq 'a = Seq.t 'a
 
-  function (++) (s t: seq 'a) : seq 'a = Seq.(++) s t
-  function ([]) (s: seq 'a) (i: integer): 'a = Seq.([]) s i
-  function ([..]) (s: seq 'a) (i1 i2: integer): seq 'a = Seq.([..]) s i1 i2
-  function ([.._]) (s: seq 'a) (i: integer): seq 'a = Seq.([.._]) s i
-  function ([_..]) (s: seq 'a) (i: integer): seq 'a = Seq.([_..]) s i
+  function (++) (s t: seq 'a) : seq 'a = S.(++) s t
+  function ([]) (s: seq 'a) (i: integer): 'a = S.([]) s i
+  function ([..]) (s: seq 'a) (i1 i2: integer): seq 'a = S.([..]) s i1 i2
+  function ([.._]) (s: seq 'a) (i: integer): seq 'a = S.([.._]) s i
+  function ([_..]) (s: seq 'a) (i: integer): seq 'a = S.([_..]) s i
 
   use export ref.Ref
 
@@ -100,20 +114,20 @@ module Stdlib
 
     function length (l: list 'a) : int = Length.length l
 
-    function nth (l: t 'a) (i: integer) : 'a = LNth.nth i l
-    function nth_opt (l: t 'a) (i: integer) : option 'a = LNthOpt.nth i l
+    function nth (l: list 'a) (i: integer) : 'a = LNth.nth i l
+    function nth_opt (l: list 'a) (i: integer) : option 'a = LNthOpt.nth i l
 
-    function rev (l: t 'a) : t 'a = reverse l
+    function rev (l: list 'a) : list 'a = reverse l
 
     (* the list [f i; f (i+1); ...; f (i+n-1)] *)
-    let rec function init_aux (i n: integer) (f: integer -> 'a) : t 'a
+    let rec function init_aux (i n: integer) (f: integer -> 'a) : list 'a
       variant { n }
     = if n <= 0 then Nil else Cons (f i) (init_aux (i + 1) (n - 1) f)
 
-    function init (n: integer) (f: integer -> 'a) : t 'a =
+    function init (n: integer) (f: integer -> 'a) : list 'a =
       init_aux 0 n f
 
-    function map (f: 'a -> 'b) (l: t 'a) : t 'b =
+    function map (f: 'a -> 'b) (l: list 'a) : list 'b =
       match l with
       | Nil -> Nil
       | Cons x r -> Cons (f x) (map f r)
@@ -172,7 +186,9 @@ module Stdlib
 
     predicate mem (x: 'a) (l: t 'a) = LMem.mem x l
 
-    function to_seq (l: t 'a) : seq 'a = Seq.of_list l
+    use seq.OfList
+
+    function to_seq (l: t 'a) : S.seq 'a = of_list l
 
     function of_seq (l: seq 'a) : t 'a = SL.to_list l
 
@@ -253,8 +269,8 @@ module Stdlib
     function of_list (l: list 'a) : t 'a
     = match l with Nil -> empty | Cons x l -> add x (of_list l) end
 
-    function to_seq (b: t 'a) : Seq.t 'a = Seq.of_list (to_list b)
-    function of_seq (s: Seq.t 'a) : t 'a = of_list (List.of_seq s)
+    function to_seq (b: t 'a) : S.seq 'a = Seq.of_list (to_list b)
+    function of_seq (s: S.seq 'a) : t 'a = of_list (List.of_seq s)
 
   end
   type bag 'a = Bag.B.bag 'a
@@ -272,9 +288,13 @@ module Stdlib
 
     function to_seq (a: array 'a) : seq 'a = a.elts
 
-    (*@ function make (n: integer) (x: 'a) : 'a t *)
+    function make (n: integer) (x: 'a) : t 'a
+    axiom make_def : forall n: integer, x: 'a. n >= 0 ->
+      let a = make n x in
+      (forall i. 0 <= i < n -> a[i] = x) /\
+      (a.length = n)
 
-    (*@ function init (n: integer) (f: integer -> 'a) : 'a t *)
+    function init (n: integer) (f: integer -> 'a) : t 'a
 
     function append (a b: t 'a) : t 'a
     axiom append_def:
@@ -331,74 +351,64 @@ module Stdlib
   use int.Power as P
   function pow (x y: integer) : integer = P.power x y
 
-  use export mach.int.Int63
+  type int63 = I.int63
   function integer_of_int (x: int63) : integer = to_int x
 
-  (* let constant max_int : integer = I.max_int63 *)
-  (* let constant min_int : integer = I.min_int63 *)
+  constant max_int : integer = I.max_int63
+  constant min_int : integer = I.min_int63
 
-  function succ (x: integer) : integer = [@inline:trivial] x+1
-  function pred (x: integer) : integer = [@inline:trivial] x-1
+  (* function succ (x: integer) : integer = [@inline:trivial] x+1 *)
+  (* function pred (x: integer) : integer = [@inline:trivial] x-1 *)
 
-  (* use export int.Abs *)
+  (* (\* use export int.Abs *\) *)
 
-  function fst (x : ('a, 'b)) : 'a = let (f, _) = x in f
-  function snd (x : ('a, 'b)) : 'b = let (_, s) = x in s
+  (* function fst (x : ('a, 'b)) : 'a = let (f, _) = x in f *)
+  (* function snd (x : ('a, 'b)) : 'b = let (_, s) = x in s *)
 
-  (* TODO give defs/axioms to the following *)
-  function logand (x y: integer) : integer
-  function logor (x y: integer) : integer
-  function logxor (x y: integer) : integer
-  function lognot (x: integer) : integer
-  function shift_left (x y: integer) : integer
-  function shift_right (x y: integer) : integer
-  function shift_right_trunc (x y: integer) : integer
+  (* (\* TODO give defs/axioms to the following *\) *)
+  (* function logand (x y: integer) : integer *)
+  (* function logor (x y: integer) : integer *)
+  (* function logxor (x y: integer) : integer *)
+  (* function lognot (x: integer) : integer *)
+  (* function shift_left (x y: integer) : integer *)
+  (* function shift_right (x y: integer) : integer *)
+  (* function shift_right_trunc (x y: integer) : integer *)
 
-  scope Order
-    predicate is_pre_order (cmp: 'a -> 'a -> int63) =
-      (forall x. cmp x x = 0) /\
-      (forall x y. cmp x y = 0 <-> cmp y x = 0) /\
-      (forall x y. cmp x y < 0 <-> cmp y x > 0) /\
-      (forall x y z.
-        (cmp x y = 0 -> cmp y z = 0 -> cmp x z = 0) /\
-        (cmp x y = 0 -> cmp y z < 0 -> cmp x z < 0) /\
-        (cmp x y < 0 -> cmp y z = 0 -> cmp x z < 0) /\
-        (cmp x y < 0 -> cmp y z < 0 -> cmp x z < 0))
-  end
+  (* scope Order *)
+  (*   predicate is_pre_order (cmp: 'a -> 'a -> int) = *)
+  (*     (forall x. cmp x x = 0) /\ *)
+  (*     (forall x y. cmp x y = 0 <-> cmp y x = 0) /\ *)
+  (*     (forall x y. cmp x y < 0 <-> cmp y x > 0) /\ *)
+  (*     (forall x y z. *)
+  (*       (cmp x y = 0 -> cmp y z = 0 -> cmp x z = 0) /\ *)
+  (*       (cmp x y = 0 -> cmp y z < 0 -> cmp x z < 0) /\ *)
+  (*       (cmp x y < 0 -> cmp y z = 0 -> cmp x z < 0) /\ *)
+  (*       (cmp x y < 0 -> cmp y z < 0 -> cmp x z < 0)) *)
 
-  scope Map
-    use export map.Map
-  end
+  (*   lemma cmp_eq: forall x y: 'a, cmp: 'a -> 'a -> int. *)
+  (*     is_pre_order cmp -> (cmp x y = 0 <-> x = y) *)
+  (* end *)
 
-end
-
-module Comparable
-
-  use int.Int
-  use mach.int.Int63
-  use Stdlib
-
-  type t
-
-  function cmp: t -> t -> int63
-  axiom is_pre_order: Order.is_pre_order cmp
-
-  val compare (x y: t) : int63
-    ensures { result = cmp x y }
-
-  predicate le (x y: t) = cmp x y <= 0
+  (* scope Map *)
+  (*   use export map.Map *)
+  (* end *)
 
 end
 
-(* module Seq *)
+(* module Comparable *)
 
-(*   use export seq.Seq *)
-(*   use export seq.FoldLeft *)
-(*   use export seq.FoldRight *)
+(*   use int.Int *)
+(*   use mach.int.Int63 *)
+(*   use Stdlib *)
 
-(*   use int.Int, mach.int.Int63 *)
-(*   predicate le (x y: int63) = *)
-(*     x <= y *)
-(*   clone export seq.Sorted with type t = int63, predicate le, goal . *)
+(*   type t *)
+
+(*   function cmp: t -> t -> int *)
+(*   axiom is_pre_order: Order.is_pre_order cmp *)
+
+(*   val compare (x y: t) : int63 *)
+(*     ensures { result = cmp x y } *)
+
+(*   predicate le (x y: t) = cmp x y <= 0 *)
 
 (* end *)

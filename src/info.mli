@@ -1,6 +1,6 @@
 open Gospel
-open Tterm
 open Ttypes
+open Symbols
 
 type path = string list
 

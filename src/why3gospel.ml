@@ -9,6 +9,7 @@
 (**************************************************************************)
 
 module P = Ppxlib
+module G = Gospel
 open Trans
 open Why3
 open Ptree
@@ -46,7 +47,7 @@ let type_check name nm sigs =
   let ns = List.hd md.muc_import in
   (ns, Gospel.Tmodule.wrap_up_muc md)
 
-module Ut = Gospel.Uast
+module Ut = G.Uast
 
 (* extract additional uses and vals from file.mli.why3, if any *)
 let extract_use sig_item =

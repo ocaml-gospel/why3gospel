@@ -362,6 +362,12 @@ module Gospelstdlib
 
   (* (\* use export int.Abs *\) *)
 
+  function abs (x: integer) : integer =
+    [@inline:trivial] if x >= 0 then x else -x
+
+  lemma Abs_le: forall x y:integer. abs x <= y <-> -y <= x <= y
+  lemma Abs_pos: forall x:integer. abs x >= 0
+
   function fst (x : ('a, 'b)) : 'a = let (f, _) = x in f
   function snd (x : ('a, 'b)) : 'b = let (_, s) = x in s
 

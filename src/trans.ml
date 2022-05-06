@@ -75,9 +75,9 @@ module Term = struct
     | Tt.Tlambda -> Dterm.DTlambda
 
   let rec pattern pat =
-    let loc = match pat.Tt.p_loc with
-      | None -> dummy_loc
-      | Some l -> location l in
+    let loc =
+      match pat.Tt.p_loc with None -> dummy_loc | Some l -> location l
+    in
     let mk_pattern pat_desc = mk_pattern pat_desc loc in
     let p_node = function
       | Tt.Pwild -> Pwild

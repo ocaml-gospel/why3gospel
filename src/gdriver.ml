@@ -8,28 +8,30 @@
 (*  (as described in file LICENSE enclosed).                              *)
 (**************************************************************************)
 
-(** Temporary "driver" from GOSPEL symbols into WhyML.
+open Gospel.Ttypes
+open Gospel.Tmodule
+open Gospel.Symbols
+module Hid = Hashtbl.Make (Gospel.Identifier.Ident)
+module Mstr = Gospel.Tmodule.Mstr
 
-    This is a very simple workaround, in order to support translation of
-    existing examples of the VOCaL library. In the future, this should resemble
-    the drivers technology of Why3, i.e., one should be able to provide a
-    driver file mapping GOSPEL symbols into a corresponding counterpart from the
-    Why3 standard library. The translation plugin should then consume such
-    file, similarly to how Why3 extraction mechanism deals with drivers. *)
+let driver = Hid.create 0
+let add_ls prefix s ls = Hid.add driver ls.ls_name (s :: prefix)
+let add_ts prefix s ts = Hid.add driver ts.ts_ident (s :: prefix)
 
-let driver = Hashtbl.create 0
+let init ns =
+  let rec visit prefix ns =
+    Mstr.iter (add_ls prefix) ns.ns_ls;
+    Mstr.iter (add_ts prefix) ns.ns_ts;
+    Mstr.iter
+      (fun p ns ->
+        let prefix = if p = "Gospelstdlib" then prefix else p :: prefix in
+        visit prefix ns)
+      ns.ns_ns
+  in
+  visit [] ns;
+  let ts_int = ns_find_ts ns [ "Gospelstdlib"; "int" ] in
+  Hid.replace driver ts_int.ts_ident [ "int63" ];
+  let ls_nil = ns_find_ls ns [ "[]" ] in
+  Hid.replace driver ls_nil.ls_name [ "Nil" ]
 
-let () =
-  List.iter
-    (fun (x, y) -> Hashtbl.add driver x y)
-    Gospel.Ttypes.
-      [
-        (ts_integer.ts_ident.id_str, "int");
-        ("int", "int63");
-        ("mixfix {}", "empty");
-        ("mixfix {:_:}", "singleton");
-        ("[]", "Nil");
-        ("infix ::", "Cons");
-      ]
-
-let query_syntax str = Hashtbl.find_opt driver str
+let query_syntax str = Hid.find_opt driver str

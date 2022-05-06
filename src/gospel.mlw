@@ -8,143 +8,413 @@
 (*  (as described in file LICENSE enclosed).                              *)
 (**************************************************************************)
 
-(** This module mirrors the GOSPEL standard library.
-    It is used in the Why3 modules built by the GOSPEL plug-in for Why3. *)
+(** This module mirrors the Gospel standard library.
+    It is used in the Why3 modules built by the Gospel plug-in for Why3. *)
 
-module Stdlib
+module Gospelstdlib
 
-  use export int.Int
-  use export int.MinMax
+  use int.Int
+  use import mach.int.Int63 as I
   use export option.Option
   use export ocaml.Exceptions
   use export ocaml.Sys
-  use export ocaml.Pervasives
   use export list.List
-  use export mach.array.Array63Permut
+
+  exception Failure string
+
+  use int.MinMax
+
+  function (::) (x: 'a) (l: list 'a) : list 'a = Cons x l
+  (* function ([]) : list 'a = Nil *)
 
   type integer = int
 
-  use int.ComputerDivision    (* FIXME? Euclidean division instead *)
-  function (/) (x y: int) : int = div x y
+  function (+) (x y: integer) : integer = Int.(+) x y
+  function (-) (x y: integer) : integer = Int.(-) x y
+  function ( * ) (x y: integer) : integer = Int.( * ) x y
 
-  use mach.int.Int63
-  function integer_of_int (x: int63) : int = to_int x
+  predicate (>) (x y: integer) = Int.(>) x y
+  predicate (>=) (x y: integer) = Int.(>=) x y
+  predicate (<) (x y: integer) = Int.(<) x y
+  predicate (<=) (x y: integer) = Int.(<=) x y
 
-  (* TODO: many things are missing.
-     See file ../gospel/stdlib/gospelstdlib.mli *)
+  function max (x y: integer) : integer = MinMax.max x y
+  function min (x y: integer) : integer = MinMax.min x y
 
-  use int.Int
-  use mach.int.Int63
+  use int.ComputerDivision
 
-  predicate is_pre_order (cmp: 'a -> 'a -> int63) =
-    (forall x. cmp x x = 0) /\
-    (forall x y. cmp x y = 0 <-> cmp y x = 0) /\
-    (forall x y. cmp x y < 0 <-> cmp y x > 0) /\
-    (forall x y z.
-      (cmp x y = 0 -> cmp y z = 0 -> cmp x z = 0) /\
-      (cmp x y = 0 -> cmp y z < 0 -> cmp x z < 0) /\
-      (cmp x y < 0 -> cmp y z = 0 -> cmp x z < 0) /\
-      (cmp x y < 0 -> cmp y z < 0 -> cmp x z < 0))
+  function mod (x y: int) : int = ComputerDivision.mod x y
 
   use import seq.Seq as S
-  type seq 'a = S.seq 'a
-  function length (s: seq 'a): integer = S.length s
 
-  function ([]) (s: seq 'a) (i:integer): 'a = S.([]) s i
+  scope Seq
 
-  predicate (==) (s1 s2: seq 'a) =
-    length s1 = length s2 &&
-    forall i. 0 <= i < length s1 -> s1[i] = s2[i]
+    use seq.FreeMonoid
+    type t 'a = seq 'a
 
-(*@ function ([_.._]) (s: 'a seq) (i1: integer) (i2: integer): 'a seq *)
-(*@ function ([_..]) (s: 'a seq) (i: integer): 'a seq *)
-(*@ function ([.._]) (s: 'a seq) (i: integer): 'a seq *)
+    constant empty : seq 'a = S.empty
 
-  constant empty: seq 'a = S.empty
+    function length (s: seq 'a) : int = S.length s
 
-(*@ function (++) (s1: 'a seq) (s2: 'a seq): 'a seq *)
+    function init (i: int) (f: int -> 'a) : seq 'a = create i f
 
-  use seq.OfList
+    use export seq.OfList
+    use seq.Reverse
 
-  function seq_of_list (l: list 'a) : seq 'a = of_list l
+    function cons (x: 'a) (s: seq 'a) : seq 'a = S.cons x s
+    function rev (s: seq 'a) : seq 'a = reverse s
 
-  use import mach.peano.Peano as P
-  function int_of_peano (t: P.t) : int = t
+    function set (s: seq 'a) (i: int) (v: 'a) : seq 'a =
+      S.set s i v
 
-  use import set.Fset as FS
-  type set 'a = fset 'a
+  end
+  import Seq
+
+  type seq 'a = Seq.t 'a
+
+  function (++) (s t: seq 'a) : seq 'a = S.(++) s t
+  function ([]) (s: seq 'a) (i: integer): 'a = S.([]) s i
+  function ([..]) (s: seq 'a) (i1 i2: integer): seq 'a = S.([..]) s i1 i2
+  function ([.._]) (s: seq 'a) (i: integer): seq 'a = S.([.._]) s i
+  function ([_..]) (s: seq 'a) (i: integer): seq 'a = S.([_..]) s i
+
+  use export ref.Ref
+
+  scope Set
+    use import set.Fset as FS
+
+    predicate mem (x: 'a) (s: fset 'a) = FS.mem x s
+
+    constant empty: fset 'a = FS.empty
+
+    function singleton (x: 'a) : fset 'a = FS.singleton x
+
+    function union (s1 s2: fset 'a) : fset 'a = FS.union s1 s2
+
+    use import set.FsetSum as FSum
+
+    function sum (f: 'a -> integer) (x: fset 'a) : integer = FSum.sum x f
+  end
+  type set 'a = Set.FS.fset 'a
+
+  scope List
+
+    use list.Length
+    use export list.HdTlNoOpt
+    use list.NthNoOpt as LNth
+    use list.Nth as LNthOpt
+    use export list.Reverse
+    use list.Mem as LMem
+    use seq.ToList as SL
+    use list.FoldLeft as LFoldl
+    use list.FoldRight as LFoldr
+    use list.Quant as LQuant
+
+    type t 'a = list 'a
+
+    function length (l: list 'a) : int = Length.length l
+
+    function nth (l: list 'a) (i: integer) : 'a = LNth.nth i l
+    function nth_opt (l: list 'a) (i: integer) : option 'a = LNthOpt.nth i l
+
+    function rev (l: list 'a) : list 'a = reverse l
+
+    (* the list [f i; f (i+1); ...; f (i+n-1)] *)
+    let rec function init_aux (i n: integer) (f: integer -> 'a) : list 'a
+      variant { n }
+    = if n <= 0 then Nil else Cons (f i) (init_aux (i + 1) (n - 1) f)
+
+    function init (n: integer) (f: integer -> 'a) : list 'a =
+      init_aux 0 n f
+
+    function map (f: 'a -> 'b) (l: list 'a) : list 'b =
+      match l with
+      | Nil -> Nil
+      | Cons x r -> Cons (f x) (map f r)
+      end
+
+    function mapi_aux (i: integer) (f: integer -> 'a -> 'b) (l: list 'a) :
+      list 'b
+    = match l with
+      | Nil -> Nil
+      | Cons x r -> Cons (f i x) (mapi_aux (i + 1) f r)
+      end
+
+    function mapi (f: integer -> 'a -> 'b) (l: t 'a) : t 'b =
+      mapi_aux 0 f l
+
+    function fold_left (f: 'a -> 'b -> 'a) (init: 'a) (l: t 'b) : 'a =
+      LFoldl.fold_left f init l
+
+    function fold_right (f: 'b -> 'a -> 'a) (l: t 'b) (init: 'a) : 'a =
+      LFoldr.fold_right f l init
+
+    let rec function map2 (f: 'a -> 'b -> 'c) (l: t 'a) (l': t 'b) : t 'c
+      requires { length l = length l' }
+      variant  { l }
+    = match l, l' with
+      | Nil, Nil -> Nil
+      | Cons a1 l1, Cons a2 l2 -> Cons (f a1 a2) (map2 f l1 l2)
+      | _ -> absurd
+      end
+
+    predicate for_all (f: 'a -> bool) (l: t 'a) =
+      LQuant.for_all f l
+
+    predicate _exists (f: 'a -> bool) (l: t 'a) =
+      LQuant.for_some f l
+
+    (* Cannot use [let predicate] because of the [absurd] case *)
+    (* FIXME? Should we provide post-conditions to the following functions ? *)
+    let rec function for_all2 (f: 'a -> 'b -> bool) (l: t 'a) (l': t 'b) : bool
+      requires { length l = length l' }
+      variant  { l }
+    = match l, l' with
+      | Nil, Nil -> true
+      | Cons a1 l1, Cons a2 l2 -> f a1 a2 && for_all2 f l1 l2
+      | _ -> absurd
+      end
+
+    let rec function _exists2 (f: 'a -> 'b -> bool) (l: t 'a) (l': t 'b) : bool
+      requires { length l = length l' }
+      variant  { l }
+    = match l, l' with
+      | Nil, Nil -> false
+      | Cons a1 l1, Cons a2 l2 -> f a1 a2 || _exists2 f l1 l2
+      | _ -> absurd
+      end
+
+    predicate mem (x: 'a) (l: t 'a) = LMem.mem x l
+
+    use seq.OfList
+
+    function to_seq (l: t 'a) : S.seq 'a = of_list l
+
+    function of_seq (l: seq 'a) : t 'a = SL.to_list l
+
+  end
+
+  scope Bag
+    use bag.Bag as B
+
+    type t 'a = B.bag 'a
+
+    function occurrences (x: 'a) (b: t 'a): integer =
+      B.nb_occ x b
+
+    (*@ function compare (b b': 'a t) : int *)
+
+    function empty : t 'a = B.empty_bag
+
+    predicate is_empty (b: t 'a) = b = empty
+
+    predicate mem (x: 'a) (b: t 'a) = B.mem x b
+
+    function add (x: 'a) (b: t 'a) : t 'a = B.add x b
+
+    function singleton (x: 'a) : t 'a = B.singleton x
+
+    function remove (x: 'a) (b: t 'a) : t 'a =
+      B.diff b (B.singleton x)
+
+    function union (b b': t 'a) : t 'a
+
+    axiom def_union:
+      forall x: 'a, b b': t 'a.
+      occurrences x (union b b') = max (occurrences x b) (occurrences x b')
+
+    function sum (b b': t 'a) : t 'a =
+      B.union b b'
+
+    function inter (b b': t 'a) : t 'a =
+      B.inter b b'
+
+    predicate disjoint (b b': t 'a) =
+      B.inter b b' = empty
+
+    function diff (b b': t 'a) : t 'a =
+      B.diff b b'
+
+    predicate subset (b b': t 'a) =
+      forall x. occurrences x b <= occurrences x b'
+
+    function choose (b: t 'a) : 'a =
+      B.choose b
+
+    function choose_opt (b: t 'a) : option 'a =
+      if b = empty then None else Some (choose b)
+
+    (* TODO give defs/axioms to the following *)
+    function map (f: 'a -> 'b) (b: t 'a) : t 'b
+
+    function fold (f: 'a -> 'b -> 'b) (b: t 'a) : 'b
+
+    predicate for_all (f: 'a -> bool) (b: t 'a)
+
+    predicate _exists (f: 'a -> bool) (b: t 'a)
+
+    function filter (f: 'a -> bool) (b: t 'a) : t 'a
+
+    function filter_map (f: 'a -> option 'a) (b: t 'a) : t 'a
+
+    function partition (f: 'a -> bool) (b: t 'a) : (t 'a, t 'a)
+
+    function cardinal (b: t 'a) : integer = B.card b
+
+    let rec ghost function to_list (b: t 'a) : list 'a
+      variant { cardinal b }
+    = if is_empty b then Nil
+      else let x = choose b in Cons x (to_list (remove x b))
+
+    function of_list (l: list 'a) : t 'a
+    = match l with Nil -> empty | Cons x l -> add x (of_list l) end
+
+    function to_seq (b: t 'a) : S.seq 'a = Seq.of_list (to_list b)
+    function of_seq (s: S.seq 'a) : t 'a = of_list (List.of_seq s)
+
+  end
+  type bag 'a = Bag.B.bag 'a
+
+  scope Array
+    use import mach.array.Array63 as Array
+
+    type t 'a = array 'a
+
+    function length (a: t 'a) : integer = Array.length a
+
+    function get (a: array 'a) (i: int) : 'a = a[i]
+
+    use mach.array.Array63Permut as P
+
+    function to_seq (a: array 'a) : seq 'a = a.elts
+
+    function make (n: integer) (x: 'a) : t 'a
+    axiom make_def : forall n: integer, x: 'a. n >= 0 ->
+      let a = make n x in
+      (forall i. 0 <= i < n -> a[i] = x) /\
+      (a.length = n)
+
+    function init (n: integer) (f: integer -> 'a) : t 'a
+
+    function append (a b: t 'a) : t 'a
+    axiom append_def:
+      forall a b: t 'a. to_seq (append a b) = to_seq a ++ to_seq b
+
+    (*@ function concat (a: 'a t list) : 'a t *)
+
+    function sub (a: t 'a) (i len: integer) : t 'a
+    axiom sub_def:
+      forall a: t 'a, i len. to_seq (sub a i len) = (to_seq a)[i..i+len]
+
+    (*@ function map (f: 'a -> 'b) (a: 'a t) : 'b t *)
+
+    (*@ function mapi (f: integer -> 'a -> 'b) (a: 'a t) : 'b t *)
+
+    (*@ function fold_left (f: 'a -> 'b -> 'a) (init: 'a) (a: 'b t) : 'a *)
+
+    (*@ function fold_right (f: 'b -> 'a -> 'a) (a: 'b t) (init: 'a) : 'a *)
+
+    (*@ function map2 (f: 'a -> 'b -> 'c) (a: 'a t) (b: 'b t) : 'c t *)
+
+    predicate for_all (f: 'a -> bool) (a: t 'a) =
+      forall i. 0 <= i < Seq.length a -> f a[i]
+
+    predicate _exists (f: 'a -> bool) (a: t 'a) =
+      exists i. 0 <= i < Seq.length a /\ f a[i]
+
+    (*@ predicate for_all2 (f: 'a -> 'b -> bool) (a: 'a t) (b: 'b t) *)
+
+    (*@ predicate _exists2 (f: 'a -> 'b -> bool) (a: 'a t) (b: 'b t) *)
+
+    (*@ predicate mem (x: 'a) (a: 'a t) *)
+
+    (*@ function to_list (a: 'a t) : 'a list *)
+    (*@ function of_list (l: 'a list) : 'a t *)
+
+    (*@ function of_seq (s: 'a Seq.t) : 'a t *)
+
+    (*@ function to_bag (a: 'a t) : 'a bag *)
+
+    predicate permut (a1 a2: array 'a) = P.permut_all a1 a2
+    predicate permut_sub (a1 a2: array 'a) (l u: int) = P.permut_sub a1 a2 l u
+
+  end
+  import Array
+
+  type array 'a = Array.array 'a
+
+  (* Arithmetic *)
+
+  use int.ComputerDivision
+  function (/) (x y: integer) : integer = div x y
+
+  use int.Power as P
+  function pow (x y: integer) : integer = P.power x y
+
+  type int63 = I.int63
+  function integer_of_int (x: int63) : integer = to_int x
+
+  constant max_int : integer = I.max_int63
+  constant min_int : integer = I.min_int63
+
+  function succ (x: integer) : integer = [@inline:trivial] x+1
+  function pred (x: integer) : integer = [@inline:trivial] x-1
+
+  (* (\* use export int.Abs *\) *)
+
+  function abs (x: integer) : integer =
+    [@inline:trivial] if x >= 0 then x else -x
+
+  lemma Abs_le: forall x y:integer. abs x <= y <-> -y <= x <= y
+  lemma Abs_pos: forall x:integer. abs x >= 0
+
+  function fst (x : ('a, 'b)) : 'a = let (f, _) = x in f
+  function snd (x : ('a, 'b)) : 'b = let (_, s) = x in s
+
+  (* (\* TODO give defs/axioms to the following *\) *)
+  (* function logand (x y: integer) : integer *)
+  (* function logor (x y: integer) : integer *)
+  (* function logxor (x y: integer) : integer *)
+  (* function lognot (x: integer) : integer *)
+  (* function shift_left (x y: integer) : integer *)
+  (* function shift_right (x y: integer) : integer *)
+  (* function shift_right_trunc (x y: integer) : integer *)
+
+  (* scope Order *)
+  (*   predicate is_pre_order (cmp: 'a -> 'a -> int) = *)
+  (*     (forall x. cmp x x = 0) /\ *)
+  (*     (forall x y. cmp x y = 0 <-> cmp y x = 0) /\ *)
+  (*     (forall x y. cmp x y < 0 <-> cmp y x > 0) /\ *)
+  (*     (forall x y z. *)
+  (*       (cmp x y = 0 -> cmp y z = 0 -> cmp x z = 0) /\ *)
+  (*       (cmp x y = 0 -> cmp y z < 0 -> cmp x z < 0) /\ *)
+  (*       (cmp x y < 0 -> cmp y z = 0 -> cmp x z < 0) /\ *)
+  (*       (cmp x y < 0 -> cmp y z < 0 -> cmp x z < 0)) *)
+
+  (*   lemma cmp_eq: forall x y: 'a, cmp: 'a -> 'a -> int. *)
+  (*     is_pre_order cmp -> (cmp x y = 0 <-> x = y) *)
+  (* end *)
+
+  (* scope Map *)
+  (*   use export map.Map *)
+  (* end *)
 
 end
 
-module Comparable
+(* module Comparable *)
 
-  use int.Int
-  use mach.int.Int63
-  use Stdlib
+(*   use int.Int *)
+(*   use mach.int.Int63 *)
+(*   use Stdlib *)
 
-  type t
+(*   type t *)
 
-  function cmp: t -> t -> int63
-  axiom is_pre_order: is_pre_order cmp
+(*   function cmp: t -> t -> int *)
+(*   axiom is_pre_order: Order.is_pre_order cmp *)
 
-  val compare (x y: t) : int63
-    ensures { result = cmp x y }
+(*   val compare (x y: t) : int63 *)
+(*     ensures { result = cmp x y } *)
 
-  predicate le (x y: t) = cmp x y <= 0
+(*   predicate le (x y: t) = cmp x y <= 0 *)
 
-end
-
-module Seq
-
-  use export seq.Seq
-  use export seq.FoldLeft
-  use export seq.FoldRight
-
-  use int.Int, mach.int.Int63
-  predicate le (x y: int63) =
-    x <= y
-  clone export seq.Sorted with type t = int63, predicate le, goal .
-
-end
-
-module Bag
-
-  use export bag.Bag
-
-end
-
-module Set
-
-  use import set.Fset as FS
-
-  type set 'a = FS.fset 'a
-  predicate mem (x: 'a) (s: set 'a) = FS.mem x s
-
-  constant empty: set 'a = FS.empty
-
-  function singleton (x: 'a) : set 'a = FS.singleton x
-
-  function union (s1 s2: set 'a) : set 'a = FS.union s1 s2
-
-  use import set.FsetSum as FSum
-
-  use Stdlib
-  function sum (f: 'a -> integer) (x: set 'a) : integer = FSum.sum x f
-
-end
-
-module Map
-
-  use export map.Map
-
-end
-
-module Peano
-
-  use export mach.peano.Peano
-
-end
-
-module SeqPerm
-  use export seq.Permut
-end
+(* end *)

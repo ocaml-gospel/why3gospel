@@ -1,3 +1,4 @@
-(lang dune 2.4)
+(lang dune 2.7)
 (name why3gospel)
-(formatting (enabled_for dune))
+(implicit_transitive_deps false)
+(cram enable)

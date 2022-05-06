@@ -8,6 +8,10 @@
 (*  (as described in file LICENSE enclosed).                              *)
 (**************************************************************************)
 
-val query_syntax : string -> string option
+open Gospel.Identifier
+
+val init : Gospel.Tmodule.namespace -> unit
+
+val query_syntax : Ident.t -> string list option
 (** [query_syntax s] is the WhyML counterpart of the GOSPEL expression [s], if
     any.*)
